@@ -19,25 +19,20 @@ A simple web app to check TV show episode ratings before watching - avoid disapp
 
 ## Local Development
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the app
-streamlit run app.py
-```
-
-The app will open at `http://localhost:8501`
+Just open `index.html` in your browser - no build step or dependencies needed.
 
 ## Tech Stack
 
-- **Streamlit** - Web framework
-- **Plotly** - Interactive charts
+- **Vanilla HTML/CSS/JS** - No framework
+- **Chart.js** - Interactive charts (loaded from CDN)
 - **TVMaze API** - Episode ratings data
 
 ## Deployment
 
-Deployed on Streamlit Cloud with custom domain configuration.
+Hosted on Cloudflare Pages.
+
+- **Build command:** `:`
+- **Build output directory:** `.`
 
 ## Author
 
