@@ -12,9 +12,8 @@ A simple web app to check TV show episode ratings before watching - avoid disapp
 ## Live Demo
 
 🔗 [tv.mohammedbabelly.work](https://tv.mohammedbabelly.work)
-<img width="1728" height="896" alt="Screenshot 2026-02-09 at 16 12 31" src="https://github.com/user-attachments/assets/7352bb19-295c-4fc9-8c38-e7ae872f38ca" />
-<img width="1728" height="615" alt="Screenshot 2026-02-09 at 16 12 36" src="https://github.com/user-attachments/assets/c5bcd308-4f60-48e8-91d5-dff71202fa98" />
-<img width="1728" height="608" alt="Screenshot 2026-02-09 at 16 12 42" src="https://github.com/user-attachments/assets/e07c9b02-0420-46cb-8cbc-f90045c00188" />
+<img width="1727" height="993" alt="Screenshot 2026-02-09 at 17 16 04" src="https://github.com/user-attachments/assets/83e4e946-cdf6-4e1d-b608-ec02f722cf53" />
+
 
 
 ## Local Development
@@ -27,12 +26,6 @@ Just open `index.html` in your browser - no build step or dependencies needed.
 - **Chart.js** - Interactive charts (loaded from CDN)
 - **TVMaze API** - Episode ratings data
 
-## Deployment
-
-Hosted on Cloudflare Pages.
-
-- **Build command:** `:`
-- **Build output directory:** `.`
 
 ## Author
 
