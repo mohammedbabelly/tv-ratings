@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Show Ratings</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0e1117;
+      color: #fafafa;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #9ca3af; margin-bottom: 1.5rem; }
+
+    .search-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1d24;
+      color: #fafafa;
+      font-size: 1rem;
+    }
+
+    input[type="text"]::placeholder { color: #6b7280; }
+
+    button {
+      padding: 0.6rem 1.5rem;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover { background: #1d4ed8; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .msg {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    .msg.error { background: #471717; color: #fca5a5; }
+    .msg.success { background: #14331a; color: #86efac; }
+
+    hr { border: none; border-top: 1px solid #2a2d35; margin: 1.5rem 0; }
+
+    h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+
+    .season-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .season-card {
+      background: #1a1d24;
+      border: 1px solid #2a2d35;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      min-width: 130px;
+      text-align: center;
+    }
+
+    .season-card .label { color: #9ca3af; font-size: 0.85rem; }
+    .season-card .value { font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0; }
+    .season-card .eps { color: #6b7280; font-size: 0.8rem; }
+
+    .chart-wrap {
+      background: #1a1d24;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    select {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1a1d24;
+      color: #fafafa;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid #2a2d35;
+    }
+
+    th { color: #9ca3af; font-weight: 600; font-size: 0.85rem; }
+
+    .footer { color: #6b7280; font-size: 0.85rem; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TV Show Episode Ratings</h1>
+    <p class="subtitle">Check episode ratings before watching to avoid disappointment!</p>
+
+    <div class="search-row">
+      <input type="text" id="search" placeholder="e.g., Breaking Bad, The Office, Game of Thrones">
+      <button id="searchBtn" onclick="doSearch()">Search</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="results"></div>
+
+    <hr>
+    <p class="footer">Data provided by TVMaze API</p>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById("search");
+    const searchBtn = document.getElementById("searchBtn");
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSearch();
+    });
+
+    const COLORS = [
+      "#3b82f6","#ef4444","#22c55e","#f59e0b","#a855f7",
+      "#ec4899","#14b8a6","#f97316","#6366f1","#06b6d4"
+    ];
+
+    async function doSearch() {
+      const query = searchInput.value.trim();
+      if (!query) return;
+
+      const msgEl = document.getElementById("message");
+      const resEl = document.getElementById("results");
+      resEl.innerHTML = "";
+      msgEl.innerHTML = "";
+      searchBtn.disabled = true;
+      searchBtn.textContent = "Searching...";
+
+      try {
+        const searchRes = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`);
+        const shows = await searchRes.json();
+
+        if (!shows.length) {
+          msgEl.innerHTML = `<div class="msg error">Show not found. Try a different name.</div>`;
+          return;
+        }
+
+        const show = shows[0].show;
+        msgEl.innerHTML = `<div class="msg success">Found: <strong>${esc(show.name)}</strong></div>`;
+
+        const epRes = await fetch(`https://api.tvmaze.com/shows/${show.id}/episodes`);
+        const episodes = await epRes.json();
+
+        const seasons = {};
+        for (const ep of episodes) {
+          if (!seasons[ep.season]) seasons[ep.season] = [];
+          seasons[ep.season].push({
+            episode: ep.number,
+            name: ep.name,
+            rating: ep.rating?.average ?? null
+          });
+        }
+
+        let html = "<hr><h2>Season Averages</h2><div class='season-grid'>";
+
+        for (const [sn, eps] of Object.entries(seasons)) {
+          const rated = eps.filter(e => e.rating !== null);
+          if (rated.length) {
+            const avg = rated.reduce((s, e) => s + e.rating, 0) / rated.length;
+            html += `<div class="season-card">
+              <div class="label">Season ${sn}</div>
+              <div class="value">${avg.toFixed(1)}</div>
+              <div class="eps">${rated.length} eps</div>
+            </div>`;
+          }
+        }
+        html += "</div>";
+
+        html += `<hr><h2>Episode Ratings Over Time</h2>
+          <div class="chart-wrap"><canvas id="chart"></canvas></div>`;
+
+        html += `<hr><h2>Detailed Episode Ratings</h2>
+          <select id="seasonSelect" onchange="renderTable()">
+            ${Object.keys(seasons).map(s => `<option value="${s}">Season ${s}</option>`).join("")}
+          </select>
+          <div id="episodeTable"></div>`;
+
+        resEl.innerHTML = html;
+
+        window._seasons = seasons;
+        renderTable();
+        renderChart(seasons);
+
+      } catch (err) {
+        msgEl.innerHTML = `<div class="msg error">Error fetching data: ${esc(err.message)}</div>`;
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = "Search";
+      }
+    }
+
+    function renderChart(seasons) {
+      const ctx = document.getElementById("chart").getContext("2d");
+      const datasets = [];
+
+      for (const [sn, eps] of Object.entries(seasons)) {
+        const rated = eps.filter(e => e.rating !== null);
+        if (!rated.length) continue;
+
+        const color = COLORS[(sn - 1) % COLORS.length];
+        datasets.push({
+          label: `Season ${sn}`,
+          data: rated.map(e => ({ x: e.episode, y: e.rating, name: e.name })),
+          borderColor: color,
+          backgroundColor: color,
+          tension: 0.2,
+          pointRadius: 4
+        });
+      }
+
+      new Chart(ctx, {
+        type: "line",
+        data: { datasets },
+        options: {
+          responsive: true,
+          scales: {
+            x: { type: "linear", title: { display: true, text: "Episode Number", color: "#9ca3af" }, ticks: { color: "#9ca3af", stepSize: 1 }, grid: { color: "#2a2d35" } },
+            y: { title: { display: true, text: "Rating", color: "#9ca3af" }, min: 5, max: 10, ticks: { color: "#9ca3af" }, grid: { color: "#2a2d35" } }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                title: (items) => items[0].raw.name,
+                label: (item) => `Episode ${item.raw.x} — ${item.raw.y.toFixed(1)}/10`
+              }
+            },
+            legend: { labels: { color: "#fafafa" } }
+          }
+        }
+      });
+    }
+
+    function renderTable() {
+      const sn = document.getElementById("seasonSelect").value;
+      const eps = window._seasons[sn].filter(e => e.rating !== null);
+
+      if (!eps.length) {
+        document.getElementById("episodeTable").innerHTML = `<p style="color:#9ca3af">No ratings available for Season ${sn}</p>`;
+        return;
+      }
+
+      let html = `<table><thead><tr><th>Episode</th><th>Title</th><th>Rating</th></tr></thead><tbody>`;
+      for (const ep of eps) {
+        html += `<tr><td>${ep.episode}</td><td>${esc(ep.name)}</td><td>${ep.rating.toFixed(1)}</td></tr>`;
+      }
+      html += "</tbody></table>";
+      document.getElementById("episodeTable").innerHTML = html;
+    }
+
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>
